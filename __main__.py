@@ -5,7 +5,25 @@ from tkinter.ttk import *
 path = os.path.dirname(__file__) + '/'
 
 
-def calculate():
+def rounding(n, digit=0):
+    """Return the rounding of n"""
+    if n < 0:
+        number = int(n * 10 ** digit - 0.5) / 10 ** digit
+    else:
+        number = int(n * 10 ** digit + 0.5) / 10 ** digit
+
+    if number % 1 == 0:
+        return int(number)
+    return number
+
+
+def format_currency(n):
+    t = rounding(n, 2)
+    return re.sub(r'\B(?=(\d{3})+(?!\d))', ',', str(t))
+
+
+# noinspection PyUnusedLocal
+def calculate(event):
     cap = capital.get()
     pct = percent.get()
     per = period.get()
@@ -27,11 +45,11 @@ def calculate():
             pro += inc * pct
             inc += (inc * pct)
 
-        invest.set('Capital: {}'.format(cap))
-        profit.set('Profit: {}'.format(pro))
-        income.set('Income: {}'.format(inc))
+        invest.set(f'Capital: {format_currency(cap)}')
+        profit.set(f'Profit: {format_currency(pro)}')
+        income.set(f'Income: {format_currency(inc)}')
 
-    except:
+    except Exception:
         invest.set('')
         income.set('')
         profit.set('Input error!')
@@ -40,8 +58,8 @@ def calculate():
 if __name__ == '__main__':
     root = Tk()
     root.title("An's revenue calculator v1.0")
-    img = PhotoImage(file=path + 'icon.gif')
-    root.tk.call('wm', 'iconphoto', root._w, img)
+    img = PhotoImage(file=path + 'icon.png')
+    root.wm_iconphoto(False, img)
     root.minsize(150, 150)
     root.resizable(False, False)
 
