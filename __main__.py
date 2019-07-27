@@ -18,36 +18,54 @@ def rounding(n, digit=0):
 
 
 def format_currency(n):
-    t = rounding(n, 2)
-    return re.sub(r'\B(?=(\d{3})+(?!\d))', ',', str(t))
+    return re.sub(r'\B(?=(\d{3})+(?!\d))', ',', str(n))
+
+
+def integer_number(raw):
+    temp = re.sub(r'[^\d]+', '', raw)
+    return re.sub(r'^0+(?!$)', '', temp)
+
+
+def string_to_int(raw):
+    temp = re.sub(r'[^\d]+', '', raw)
+    return int(temp)
+
+
+def on_change(entry):
+    temp = integer_number(entry.get())
+    if temp:
+        value = format_currency(temp)
+    else:
+        value = ''
+
+    entry.delete(0, END)
+    entry.insert(0, value)
 
 
 # noinspection PyUnusedLocal
-def calculate(event):
-    cap = capital.get()
-    pct = percent.get()
-    per = period.get()
+def calculate(*args):
+    capital_val = string_to_int(capital.get())
+    percent_val = percent.get()
+    period_val = string_to_int(period.get())
 
     try:
-        cap = float(cap)
-        pct = float(pct)
-        per = int(per)
-
-        if per < 0 or pct < 0:
+        capital_val = int(capital_val)
+        percent_val = float(percent_val)
+        period_val = int(period_val)
+        if period_val < 0 or percent_val < 0:
             profit.set('Input error!')
             return
 
-        pro = 0
-        inc = cap
-        pct /= 100
+        percent_val /= 100
+        profit_val = 0
+        income_val = capital_val
+        for i in range(period_val):
+            profit_val += income_val * percent_val
+            income_val += (income_val * percent_val)
 
-        for i in range(per):
-            pro += inc * pct
-            inc += (inc * pct)
-
-        invest.set(f'Capital: {format_currency(cap)}')
-        profit.set(f'Profit: {format_currency(pro)}')
-        income.set(f'Income: {format_currency(inc)}')
+        invest.set(f'Capital: {format_currency(rounding(capital_val, 2))}')
+        profit.set(f'Profit: {format_currency(rounding(profit_val, 2))}')
+        income.set(f'Income: {format_currency(rounding(income_val, 2))}')
 
     except Exception:
         invest.set('')
@@ -59,61 +77,61 @@ if __name__ == '__main__':
     root = Tk()
     root.title("An's revenue calculator v1.0")
     img = PhotoImage(file=path + 'icon.png')
-    root.wm_iconphoto(False, img)
+    root.iconphoto(False, img)
     root.minsize(150, 150)
     root.resizable(False, False)
 
     style = Style()
     themes = style.theme_names()
-
-    if 'xpnative' in themes:
-        style.theme_use('xpnative')
+    if 'clam' in themes:
+        style.theme_use('clam')
     elif 'aqua' in themes:
         style.theme_use('aqua')
-    elif 'alt' in themes:
-        style.theme_use('alt')
     else:
         style.theme_use('default')
 
-    mf = Frame(root, padding=10)
-    mf.grid(column=0, row=10, sticky='wnes')
+    main_frame = Frame(root, padding=10)
+    main_frame.grid(column=0, row=10, sticky='wnes')
 
-    capitalLbl = Label(mf, text='Capital')
-    capitalLbl.grid(row=0, column=0)
+    capital_label = Label(main_frame, text='Capital')
+    capital_label.grid(row=0, column=0)
 
     capital = StringVar()
-    capEn = Entry(mf, textvariable=capital)
-    capEn.grid(row=0, column=1, padx=5, pady=5)
+    capital_entry = Entry(main_frame, textvariable=capital)
+    capital_entry.grid(row=0, column=1, padx=5, pady=5)
+    capital.trace('w', lambda name, index, mode, entry=capital_entry: on_change(entry))
 
     invest = StringVar()
-    investLbl = Label(mf, textvariable=invest)
-    investLbl.grid(row=0, column=2)
+    invest_label = Label(main_frame, textvariable=invest)
+    invest_label.grid(row=0, column=2)
 
-    percentLbl = Label(mf, text='Percent')
+    percentLbl = Label(main_frame, text='Percent')
     percentLbl.grid(row=1, column=0)
 
     percent = StringVar()
-    perEn = Entry(mf, textvariable=percent)
-    perEn.grid(row=1, column=1, padx=5, pady=5)
+    percent_entry = Entry(main_frame, textvariable=percent)
+    percent_entry.grid(row=1, column=1, padx=5, pady=5)
+    percent.trace('w', lambda name, index, mode, entry=percent_entry: on_change(entry))
 
     profit = StringVar()
-    proLbl = Label(mf, textvariable=profit)
-    proLbl.grid(row=1, column=2)
+    profit_label = Label(main_frame, textvariable=profit)
+    profit_label.grid(row=1, column=2)
 
-    periodLbl = Label(mf, text='Period number')
-    periodLbl.grid(row=3, column=0)
+    period_label = Label(main_frame, text='Period number')
+    period_label.grid(row=3, column=0)
 
     period = StringVar()
-    periodEn = Entry(mf, textvariable=period)
-    periodEn.grid(row=3, column=1, padx=5, pady=5)
+    period_entry = Entry(main_frame, textvariable=period)
+    period_entry.grid(row=3, column=1, padx=5, pady=5)
+    period.trace('w', lambda name, index, mode, entry=period_entry: on_change(entry))
 
     income = StringVar()
-    incomeLbl = Label(mf, textvariable=income)
-    incomeLbl.grid(row=3, column=2)
+    income_label = Label(main_frame, textvariable=income)
+    income_label.grid(row=3, column=2)
 
-    calBtn = Button(mf, text='Calculate', command=calculate)
-    calBtn.grid(row=4, column=1, pady=5)
+    calculate_button = Button(main_frame, text='Calculate', command=calculate)
+    calculate_button.grid(row=4, column=1, pady=5)
 
-    capEn.focus()
+    capital_entry.focus()
     root.bind('<Return>', calculate)
     root.mainloop()
