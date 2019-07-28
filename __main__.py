@@ -8,69 +8,83 @@ path = os.path.dirname(__file__) + '/'
 def rounding(n, digit=0):
     """Return the rounding of n"""
     if n < 0:
-        number = int(n * 10 ** digit - 0.5) / 10 ** digit
+        num = int(n * 10 ** digit - 0.5) / 10 ** digit
     else:
-        number = int(n * 10 ** digit + 0.5) / 10 ** digit
+        num = int(n * 10 ** digit + 0.5) / 10 ** digit
 
-    if number % 1 == 0:
-        return int(number)
-    return number
+    if num % 1 == 0:
+        return int(num)
+    return num
 
 
 def format_currency(n):
-    return re.sub(r'\B(?=(\d{3})+(?!\d))', ',', str(n))
+    parts = str(n).split('.', 1)
+    parts[0] = re.sub(r'\B(?=(\d{3})+(?!\d))', ',', parts[0])
+    return '.'.join(parts)
 
 
 def integer_number(raw):
-    temp = re.sub(r'[^\d]+', '', raw)
-    return re.sub(r'^0+(?!$)', '', temp)
+    regexes = (r'[^\d]+', r'^0+(?!$)')
+    for regex in regexes:
+        raw = re.sub(regex, '', raw)
+
+    return raw
 
 
-def string_to_int(raw):
-    temp = re.sub(r'[^\d]+', '', raw)
-    return int(temp)
+def float_number(raw):
+    regexes = (r'[^\d]+', r'^0+(?!$)')
+    parts = raw.split('.', 1)
+    for regex in regexes:
+        parts[0] = re.sub(regex, '', parts[0])
+
+    if len(parts) > 1:
+        parts[1] = re.sub(r'[^\d]+', '', parts[1])
+    return '.'.join(parts)
 
 
-def on_change(entry):
-    temp = integer_number(entry.get())
-    if temp:
-        value = format_currency(temp)
+def currency_to_num(raw):
+    parts = raw.split('.', 1)
+    for idx, val in enumerate(parts):
+        parts[idx] = re.sub(r'[^\d]+', '', val)
+
+    if not parts[0]:
+        parts[0] = '0'
+
+    num = float('.'.join(parts))
+    if num % 1 == 0:
+        return int(num)
+    return num
+
+
+def on_change(entry, kind='int'):
+    if kind == 'int':
+        value = integer_number(entry.get())
     else:
-        value = ''
+        value = float_number(entry.get())
 
     entry.delete(0, END)
-    entry.insert(0, value)
+    entry.insert(0, format_currency(value))
 
 
 # noinspection PyUnusedLocal
 def calculate(*args):
-    capital_val = string_to_int(capital.get())
-    percent_val = percent.get()
-    period_val = string_to_int(period.get())
-
     try:
-        capital_val = int(capital_val)
-        percent_val = float(percent_val)
-        period_val = int(period_val)
-        if period_val < 0 or percent_val < 0:
-            profit.set('Input error!')
-            return
+        capital_val = currency_to_num(capital.get())
+        percent_val = currency_to_num(percent.get())
+        period_val = currency_to_num(period.get())
 
         percent_val /= 100
-        profit_val = 0
-        income_val = capital_val
-        for i in range(period_val):
-            profit_val += income_val * percent_val
-            income_val += (income_val * percent_val)
+        amount = capital_val * (1 + percent_val) ** period_val
+        profit_val = amount - capital_val
 
-        invest.set(f'Capital: {format_currency(rounding(capital_val, 2))}')
+        invest.set(f'Invest: {format_currency(rounding(capital_val, 2))}')
         profit.set(f'Profit: {format_currency(rounding(profit_val, 2))}')
-        income.set(f'Income: {format_currency(rounding(income_val, 2))}')
+        income.set(f'Amount: {format_currency(rounding(amount, 2))}')
 
-    except Exception:
+    except OverflowError:
         invest.set('')
         income.set('')
-        profit.set('Input error!')
+        profit.set('Buffer Overflow Error!')
 
 
 if __name__ == '__main__':
@@ -105,13 +119,13 @@ if __name__ == '__main__':
     invest_label = Label(main_frame, textvariable=invest)
     invest_label.grid(row=0, column=2)
 
-    percentLbl = Label(main_frame, text='Percent')
+    percentLbl = Label(main_frame, text='Interest')
     percentLbl.grid(row=1, column=0)
 
     percent = StringVar()
     percent_entry = Entry(main_frame, textvariable=percent)
     percent_entry.grid(row=1, column=1, padx=5, pady=5)
-    percent.trace('w', lambda name, index, mode, entry=percent_entry: on_change(entry))
+    percent.trace('w', lambda name, index, mode, entry=percent_entry, kind='float': on_change(entry, kind))
 
     profit = StringVar()
     profit_label = Label(main_frame, textvariable=profit)
