@@ -87,6 +87,11 @@ def calculate(*args):
         profit.set('Buffer Overflow Error!')
 
 
+def select_all(e):
+    # entry select all
+    e.widget.select_range(0, END)
+
+
 if __name__ == '__main__':
     root = Tk()
     root.title("An's revenue calculator v1.0")
@@ -148,4 +153,5 @@ if __name__ == '__main__':
 
     capital_entry.focus()
     root.bind('<Return>', calculate)
+    root.bind('<Control-a>', select_all)  # entry select all
     root.mainloop()
